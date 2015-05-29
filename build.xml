@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="buto" default="main" basedir=".">
+
+	<!-- =================================================================== -->
+	<!-- Version -->
+	<property name="major-version-number" value="1" />
+	<property name="minor-version-number" value="1" />
+	<property name="patch-version-number" value="0" />
+	
+	<!-- =================================================================== -->
+	<!-- Variables -->
+    <property name="src.dir"     		value="src"/>
+	<property name="test.dir"	 		value="test"/>
+	<property name="lib.dir"     		value="lib"/>
+    <property name="build.dir"   		value="build"/>
+    <property name="classes.dir"		value="${build.dir}/classes"/>
+    <property name="test.classes.dir" 	value="${build.dir}/test"/>
+    <property name="test.output.dir"	value="${build.dir}/test_output"/>
+    <property name="javadocs.dir"		value="${build.dir}/javadocs"/>
+    <property name="jar.dir"     		value="${build.dir}/jar"/>
+	
+	<!-- =================================================================== -->
+	<!-- Jar names -->
+	<property name="jar.main.name" value="${ant.project.name}-${major-version-number}.${minor-version-number}.${patch-version-number}.jar"/>
+	<property name="jar.main.file" value="${jar.dir}/${jar.main.name}"/>
+	
+	<property name="jar.client.name" value="${ant.project.name}-client-${major-version-number}.${minor-version-number}.${patch-version-number}.jar"/>
+	<property name="jar.client.file" value="${jar.dir}/${jar.client.name}"/>
+	
+	<property name="jar.api.name" value="${ant.project.name}-api-${major-version-number}.${minor-version-number}.${patch-version-number}.jar"/>
+	<property name="jar.api.file" value="${jar.dir}/${jar.api.name}"/>
+	<!-- =================================================================== -->
+	<!-- Environment and classpath -->
+	<property environment="env"/>
+	
+    <path id="classpath">
+        <fileset dir="${lib.dir}" includes="**/*.jar"/>
+    </path>
+	
+    <path id="test.classpath">
+		<fileset dir="${lib.dir}">
+			<include name="**/*.jar"/>
+		</fileset>
+		<pathelement location="${classes.dir}"/>
+	</path>
+        
+
+	<!-- =================================================================== -->
+	<!-- Main -->
+    <target name="main" depends="env_check,clean,jar,buto_clean,buto_update,buto_lib_copy"/>
+	
+	<target name = "env_check">
+		<fail unless="env.BUTO_HOME" message="The BUTO_HOME environment variable is not set, please set before running ant script. See readme for more details."/>
+		<available file="${env.BUTO_HOME}" type="dir" property="buto_home.exists"  />
+		<echo>BUTO_HOME set to: '${env.BUTO_HOME}'</echo>
+		<echo>BUTO_HOME exists = ${buto_home.exists}</echo>
+	</target>
+	
+	<target name = "buto_update" depends ="env_check" if="buto_home.exists">
+		<echo>Buto update.....</echo>
+		<echo>NOTE: retraining may need to be performed if the classes used to store the models have been altered.</echo>
+	
+		<delete dir ="${env.BUTO_HOME}\lib"/>
+		<mkdir dir="${env.BUTO_HOME}"/>
+		<mkdir dir="${env.BUTO_HOME}\lib\plugins"/>
+	</target>
+	
+	<target name = "buto_clean" depends ="env_check" unless="buto_home.exists">
+		<echo>Buto clean.....</echo>
+		<echo>Creating BUTO_HOME directory at '${env.BUTO_HOME}'</echo>
+		<mkdir dir="${env.BUTO_HOME}"/>
+		<mkdir dir="${env.BUTO_HOME}\lib"/>
+		<mkdir dir="${env.BUTO_HOME}\lib\plugins"/>
+		<mkdir dir="${env.BUTO_HOME}\profiles"/>
+		<mkdir dir="${env.BUTO_HOME}\logging"/>
+	</target>
+	
+	<target name="buto_lib_copy" depends ="env_check">
+		<copy file="${lib.dir}\log4j-1.2.17.jar" tofile="${env.BUTO_HOME}\lib\log4j-1.2.17.jar" overwrite="true"/>
+		<copy file="${lib.dir}\commons-math3-3.0.jar" tofile="${env.BUTO_HOME}\lib\commons-math3-3.0.jar" overwrite="true"/>
+		<copy file="${lib.dir}\jcommon-1.0.21.jar" tofile="${env.BUTO_HOME}\lib\jcommon-1.0.21.jar" overwrite="true"/>
+		<copy file="${lib.dir}\jfreechart-1.0.17.jar" tofile="${env.BUTO_HOME}\lib\jfreechart-1.0.17.jar" overwrite="true"/>
+				
+		
+		<copy file="${lib.dir}\buto-plugins-1.1.0.jar" tofile="${env.BUTO_HOME}\lib\plugins\buto-plugins-1.1.0.jar" overwrite="true"/>
+
+		<copy file="${jar.main.file}" tofile="${env.BUTO_HOME}\lib\${jar.main.name}" overwrite="true"/>
+	</target>
+	
+	<!-- =================================================================== -->
+	<!-- Clean -->
+    <target name="clean">
+        <delete dir="${build.dir}"/>
+    </target>
+
+	<!-- =================================================================== -->
+	<!-- Compile -->
+    <target name="compile" description="Compiles source code">
+    	
+    	<!-- Compile classes -->
+        <mkdir dir="${classes.dir}"/>
+        
+        <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="classpath">
+        </javac>
+    	
+        <!-- Compile test classes -->
+        <mkdir dir="${test.classes.dir}"/>
+        
+
+        <javac srcdir="${test.dir}" destdir="${test.classes.dir}" classpathref="test.classpath">
+        </javac>
+    </target>
+	
+	
+	
+	<!-- =================================================================== -->
+	<!-- Test -->
+	<target name="test" depends="compile" description = "Runs unit tests.">
+	
+		<mkdir dir="${test.output.dir}"/>
+	
+		<junit printsummary="yes" fork="yes" haltonfailure="yes">
+		
+			<classpath>
+				<pathelement path="${test.classpath}"/>
+	       		<pathelement location="${lib.dir}/junit/junit.jar"/>
+	       		<pathelement location="${lib.dir}/junit/org.hamcrest.core_1.1.0.v20090501071000.jar"/>
+	       		<pathelement location="${classes.dir}"/>
+	       		<pathelement location="${test.classes.dir}"/>
+				<pathelement location="${lib.dir}/commons-lang3-3.1.jar"/>
+				<pathelement location="${lib.dir}/commons-math3-3.0.jar"/>
+				<pathelement location="${lib.dir}/log4j-1.2.17.jar"/>
+	    	</classpath>
+		
+  			<formatter type="plain"/>
+  			
+			<batchtest todir="${test.output.dir}">
+      			<fileset dir="${test.classes.dir}"/>
+ 			</batchtest>
+		</junit>
+	
+	</target>
+	
+	<!-- =================================================================== -->
+	<!-- Jar -->
+    <target name="jar" depends="compile" description="Generates executable jar file">
+        <mkdir dir="${jar.dir}"/>
+
+    	
+        <jar destfile="${jar.main.file}">
+            <manifest>
+                <attribute name="Main-Class" value="nz.ac.massey.buto.unittest.monitor.Monitor"/>
+            </manifest>
+            <fileset dir="${classes.dir}" includes="nz/ac/massey/buto/analysis/**"/>
+        	<fileset dir="${classes.dir}" includes="nz/ac/massey/buto/domain/**"/>
+        	<fileset dir="${classes.dir}" includes="nz/ac/massey/buto/utils/**"/>
+        	<fileset dir="${classes.dir}" includes="nz/ac/massey/buto/io/**"/>
+        	<fileset dir="${classes.dir}" includes="nz/ac/massey/buto/settings/**"/>
+        	<fileset dir="${classes.dir}" includes="nz/ac/massey/buto/unittest/**"/>
+        	<fileset dir="${classes.dir}" includes="nz/ac/massey/buto/jmx/**"/>
+        	<fileset dir="${classes.dir}" includes="nz/ac/massey/buto/graph/**"/>
+
+        </jar>
+    	
+        <jar destfile="${jar.client.file}">
+        	<fileset dir="${classes.dir}" includes="nz/ac/massey/buto/domain/**"/>
+            <fileset dir="${classes.dir}" includes="nz/ac/massey/buto/unittest/**"/>
+        	<fileset dir="${classes.dir}" includes="nz/ac/massey/buto/utils/**"/>
+        	<fileset dir="${classes.dir}" includes="nz/ac/massey/buto/settings/**"/>
+        	<fileset dir="${classes.dir}" includes="nz/ac/massey/buto/jmx/**"/>
+
+        </jar>
+    	
+        <jar destfile="${jar.api.file}">
+            <fileset dir="${classes.dir}" includes="nz/ac/massey/buto/analysis/**"/>
+        	<fileset dir="${classes.dir}" includes="nz/ac/massey/buto/domain/**"/>
+        	<fileset dir="${classes.dir}" includes="nz/ac/massey/buto/utils/**"/>
+        </jar>
+</target>
+	
+    <!-- =================================================================== -->
+    <!-- Java docs -->
+	<target name="javadocs" description = "Generate javadocs">
+	
+		<mkdir dir="${javadocs.dir}"/>
+		
+		<javadoc packagenames="nz.ac.massey.buto.*" 
+			sourcepath="${src.dir}" 
+			destdir="${javadocs.dir}" 
+			public="true" 
+			author="true" 
+			version="true" 
+			windowtitle="${ant.project.name}" 
+			verbose="false"/>
+	</target>
+	
+	<!-- =================================================================== -->
+	<!-- PMD 
+    <target name="pmd" depends = "compile" description = "Generate PMD report">
+            <taskdef name="pmd" classname="net.sourceforge.pmd.ant.PMDTask" />
+            <pmd>
+            	<ruleset>java-basic</ruleset>
+				<formatter type="text" toFile="${build.dir}/pmd-ant-results.txt"/>
+				<fileset dir="${src.dir}">
+					<include name="**/*.java" />
+                </fileset>
+            </pmd>
+    </target>-->
+	<!-- =================================================================== -->
+	<!-- JDEPEND 
+    <target name="jdepend" depends="compile" description = "Generate JDepend report">
+            <jdepend outputfile="${build.dir}/jdepend-report.xml" format="xml">
+                    <classespath>
+                            <pathelement location="${classes.dir}" />
+                    </classespath>
+            </jdepend>
+            <xslt basedir="${build.dir}" destdir="docs" includes="${build.dir}/jdepend-report.xml" style="${ant.home}/etc/jdepend.xsl" />
+    </target>
+    -->
+</project>
